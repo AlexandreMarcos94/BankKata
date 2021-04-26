@@ -20,6 +20,10 @@ public class Main extends Application {
         /// Declaration before loop
         boolean endOfSession = false;
         String userInput;
+        String name;
+        int balance;
+        int threshold;
+
 
         // Loop
         while (!endOfSession) {
@@ -37,11 +41,38 @@ public class Main extends Application {
 
             // Processing user input
             switch (userInput) {
-                case "q":
+                case "q" -> {
                     endOfSession = true;
                     b.closeDb();
-                    break;
-                // TODO
+                }
+                case "0" -> System.out.println(b.printAllAccounts());
+                case "1" -> {
+                    System.out.println("Please enter the name for the account");
+                    userInput = s.nextLine();
+                    name = userInput;
+                    System.out.println("Please enter the balance for the account");
+                    userInput = s.nextLine();
+                    balance = Integer.parseInt(userInput);
+                    System.out.println("Please enter the threshold for the account");
+                    userInput = s.nextLine();
+                    threshold = Integer.parseInt(userInput);
+                    b.createNewAccount(name, balance, threshold);
+                }
+                case "2" -> {
+                    System.out.println("Please enter the name of the account");
+                    userInput = s.nextLine();
+                    name = userInput;
+                    System.out.println("Enter the amount you want to add or withdraw of the account");
+                    userInput = s.nextLine();
+                    balance = Integer.parseInt(userInput);
+                    b.changeBalanceByName(name, balance);
+                }
+                case "3" -> {
+                    System.out.println("Please Enter the name of the account you want to block");
+                    userInput = s.nextLine();
+                    name = userInput;
+                    b.blockAccount(name);
+                }
             }
         }
 

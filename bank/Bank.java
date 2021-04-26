@@ -25,10 +25,11 @@ public class Bank {
     private static final String TABLE_NAME = "accounts";
 
     private Connection c;
+    private String error_creation = "ERROR: relation \"accounts\" already exists";
+    private String error_nothing_return = "Aucun résultat retourné par la requête.";
 
     public Bank() {
         initDb();
-
         // TODO
     }
 
@@ -37,8 +38,19 @@ public class Bank {
             Class.forName(JDBC_DRIVER);
             c = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
             System.out.println("Opened database successfully");
+            try (Statement s = c.createStatement()) {
+                s.executeQuery("CREATE TABLE accounts(" +
+                        "name VARCHAR(30), " +
+                        "balance INTEGER, " +
+                        "threshold INTEGER, " +
+                        "isblock BOOLEAN DEFAULT FALSE);"
+                );
+            } catch (Exception f){
+                if(!f.getMessage().equals(error_creation) && !f.getMessage().equals(error_nothing_return)){ // Ne pas afficher les erreurs error_creation et error_creation2
+                    System.out.println(f.getMessage());
 
-            // TODO Init DB
+                }
+            }
 
         } catch (Exception e) {
             System.err.println(e.getClass().getName() + ": " + e.getMessage());
@@ -57,7 +69,7 @@ public class Bank {
     void dropAllTables() {
         try (Statement s = c.createStatement()) {
             s.executeUpdate(
-                       "DROP SCHEMA public CASCADE;" +
+                    "DROP SCHEMA public CASCADE;" +
                             "CREATE SCHEMA public;" +
                             "GRANT ALL ON SCHEMA public TO postgres;" +
                             "GRANT ALL ON SCHEMA public TO public;");
@@ -67,22 +79,87 @@ public class Bank {
     }
 
 
-    public void createNewAccount(String name, int balance, int threshold) {
-        // TODO
+    public void createNewAccount(String name, Integer balance, Integer threshold) {
+       if(threshold <= 0 && balance >= 0 && !name.equals("")){
+           try (Statement s = c.createStatement()) {
+               s.executeUpdate("INSERT INTO accounts (name, balance, threshold) VALUES ('" + name + "', " + balance + ", " + threshold + ");");
+           } catch (Exception e) {
+               System.out.println(e.toString());
+           }
+       } else {
+           System.out.println("Invalid Inputs");
+       }
     }
 
-    public String printAllAccounts() {
-        // TODO
 
+//                  DEMANDER POUR LE ACCOUNT = NEW ACCOUNT();
+
+    public String printAllAccounts() {
+        try (Statement s = c.createStatement()) {
+            ResultSet rs = s.executeQuery("SELECT * FROM accounts");
+            //StringBuilder printAccount = new StringBuilder();                 // STRING BUILDER -> AUTRE MANIERE POUR LE PRINTACCOUNT
+            String printAccount = "";
+            while (rs.next()){
+                String accountName = rs.getString("NAME");
+                int accountBalance = rs.getInt("BALANCE");
+                int accountThreshold = rs.getInt("THRESHOLD");
+                boolean isblock = rs.getBoolean("isblock");
+                printAccount = printAccount + accountName + " | " + accountBalance + " | " + accountThreshold + " | " + isblock + "\n";
+               // printAccount.append(accountName).append(" | ").append(accountBalance).append(" | ").append(accountThreshold).append(" | ").append(isblock).append("\n");
+            }
+            return printAccount;
+        } catch (Exception e) {
+            System.out.println(e.toString());
+        }
         return "";
     }
 
     public void changeBalanceByName(String name, int balanceModifier) {
-        // TODO
+        try (Statement s = c.createStatement()){
+            ResultSet res = s.executeQuery("SELECT balance, isblock, threshold FROM accounts WHERE name = '" + name + "'"); // WHERE name = '" + name + "'"
+            res.next();         // res.next() SERT A PLACER LE CURSEUR SUR LA PREMIERE ROW
+            boolean isblock = res.getBoolean("isblock");
+            Integer balance = res.getInt("balance");
+            Integer threshold = res.getInt("threshold");
+            balance += balanceModifier;
+            boolean isThresholdOk = threshold <= balance;
+            if(!isblock && isThresholdOk){
+                try (Statement f = c.createStatement()){
+                    f.executeQuery("UPDATE accounts SET balance = " + balance + "WHERE name = '" + name + "'");
+                    System.out.println("Process finish with success");
+                } catch (Exception d) {
+                    if(!d.getMessage().equals(error_nothing_return)){
+                        System.out.println("Error during the process" + d);
+                    }
+                }
+            } else {
+                System.out.println("The account is blocked you can't change the balance");
+            }
+        } catch (Exception e) {
+            System.out.println("The account doesn't exist :");
+        }
     }
 
     public void blockAccount(String name) {
-        // TODO
+        try (Statement s = c.createStatement()){
+            ResultSet res = s.executeQuery("SELECT * FROM accounts WHERE name = '" + name + "'"); // WHERE name = '" + name + "'"
+                res.next();
+                boolean isblock = res.getBoolean("isblock");
+                if(!isblock){
+                    try (Statement f = c.createStatement()){
+                        f.executeQuery("UPDATE accounts SET isblock = true WHERE name = '" + name + "'");
+                        System.out.println("Process finish with success");
+                    } catch (Exception d) {
+                        if(!d.getMessage().equals(error_nothing_return)){
+                            System.out.println("Error during the process" + d);
+                        }
+                    }
+                } else {
+                    System.out.println("The account is already blocked");
+                }
+        } catch (Exception e) {
+            System.out.println("The account doesn't exist :");
+        }
     }
 
     // For testing purpose
@@ -97,11 +174,11 @@ public class Bank {
             int nbColumns = r.getMetaData().getColumnCount();
 
             // while there is a next row
-            while (r.next()){
+            while (r.next()) {
                 String[] currentRow = new String[nbColumns];
 
                 // For each column in the row
-                for (int i = 1 ; i <= nbColumns ; i++) {
+                for (int i = 1; i <= nbColumns; i++) {
                     currentRow[i - 1] = r.getString(i);
                 }
                 res += Arrays.toString(currentRow);
