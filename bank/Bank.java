@@ -39,14 +39,14 @@ public class Bank {
             c = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
             System.out.println("Opened database successfully");
             try (Statement s = c.createStatement()) {
-                s.executeQuery("CREATE TABLE accounts(" +
+                s.executeQuery("CREATE TABLE accounts(" +       // Create table accounts
                         "name VARCHAR(30), " +
                         "balance INTEGER, " +
                         "threshold INTEGER, " +
                         "isblock BOOLEAN DEFAULT FALSE);"
                 );
             } catch (Exception f){
-                if(!f.getMessage().equals(error_creation) && !f.getMessage().equals(error_nothing_return)){ // Ne pas afficher les erreurs error_creation et error_creation2
+                if(!f.getMessage().equals(error_creation) && !f.getMessage().equals(error_nothing_return)){ // don't show following error: error_creation et error_creation2
                     System.out.println(f.getMessage());
 
                 }
@@ -82,7 +82,7 @@ public class Bank {
     public void createNewAccount(String name, Integer balance, Integer threshold) {
        if(threshold <= 0 && balance >= 0 && !name.equals("")){
            try (Statement s = c.createStatement()) {
-               s.executeUpdate("INSERT INTO accounts (name, balance, threshold) VALUES ('" + name + "', " + balance + ", " + threshold + ");");
+               s.executeUpdate("INSERT INTO accounts (name, balance, threshold) VALUES ('" + name + "', " + balance + ", " + threshold + ");");     //  Put the new account in the db
            } catch (Exception e) {
                System.out.println(e.toString());
            }
@@ -96,16 +96,15 @@ public class Bank {
 
     public String printAllAccounts() {
         try (Statement s = c.createStatement()) {
-            ResultSet rs = s.executeQuery("SELECT * FROM accounts");
-            //StringBuilder printAccount = new StringBuilder();                 // STRING BUILDER -> AUTRE MANIERE POUR LE PRINTACCOUNT
-            String printAccount = "";
+            ResultSet rs = s.executeQuery("SELECT * FROM accounts");    // Select all acounts in database
+            String printAccount = "";       // Set the default string if nothing is return by the query
+
             while (rs.next()){
                 String accountName = rs.getString("NAME");
                 int accountBalance = rs.getInt("BALANCE");
                 int accountThreshold = rs.getInt("THRESHOLD");
                 boolean isblock = rs.getBoolean("isblock");
-                printAccount = printAccount + accountName + " | " + accountBalance + " | " + accountThreshold + " | " + isblock + "\n";
-               // printAccount.append(accountName).append(" | ").append(accountBalance).append(" | ").append(accountThreshold).append(" | ").append(isblock).append("\n");
+                printAccount = printAccount + accountName + " | " + accountBalance + " | " + accountThreshold + " | " + isblock + "\n";     //      Concatenation of all returned values;
             }
             return printAccount;
         } catch (Exception e) {
@@ -116,16 +115,16 @@ public class Bank {
 
     public void changeBalanceByName(String name, int balanceModifier) {
         try (Statement s = c.createStatement()){
-            ResultSet res = s.executeQuery("SELECT balance, isblock, threshold FROM accounts WHERE name = '" + name + "'"); // WHERE name = '" + name + "'"
-            res.next();         // res.next() SERT A PLACER LE CURSEUR SUR LA PREMIERE ROW
+            ResultSet res = s.executeQuery("SELECT balance, isblock, threshold FROM accounts WHERE name = '" + name + "'"); // Get the accounts by the name, error return if doesn't exist
+            res.next();         // res.next() Put the cursor on the first row
             boolean isblock = res.getBoolean("isblock");
             Integer balance = res.getInt("balance");
             Integer threshold = res.getInt("threshold");
             balance += balanceModifier;
-            boolean isThresholdOk = threshold <= balance;
+            boolean isThresholdOk = threshold <= balance;       //      Check if the value of the balance is not below than threshold
             if(!isblock && isThresholdOk){
                 try (Statement f = c.createStatement()){
-                    f.executeQuery("UPDATE accounts SET balance = " + balance + "WHERE name = '" + name + "'");
+                    f.executeQuery("UPDATE accounts SET balance = " + balance + "WHERE name = '" + name + "'");         // If its good Update the acounts with the new balance
                     System.out.println("Process finish with success");
                 } catch (Exception d) {
                     if(!d.getMessage().equals(error_nothing_return)){
@@ -136,18 +135,18 @@ public class Bank {
                 System.out.println("The account is blocked you can't change the balance");
             }
         } catch (Exception e) {
-            System.out.println("The account doesn't exist :");
+            System.out.println("The account doesn't exist.");
         }
     }
 
     public void blockAccount(String name) {
         try (Statement s = c.createStatement()){
-            ResultSet res = s.executeQuery("SELECT * FROM accounts WHERE name = '" + name + "'"); // WHERE name = '" + name + "'"
+            ResultSet res = s.executeQuery("SELECT * FROM accounts WHERE name = '" + name + "'");
                 res.next();
-                boolean isblock = res.getBoolean("isblock");
+                boolean isblock = res.getBoolean("isblock");    // Check if the account is already blocked
                 if(!isblock){
                     try (Statement f = c.createStatement()){
-                        f.executeQuery("UPDATE accounts SET isblock = true WHERE name = '" + name + "'");
+                        f.executeQuery("UPDATE accounts SET isblock = true WHERE name = '" + name + "'");       //      Change the statement of the accounts on blocked
                         System.out.println("Process finish with success");
                     } catch (Exception d) {
                         if(!d.getMessage().equals(error_nothing_return)){
